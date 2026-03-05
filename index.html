@@ -1,308 +1,291 @@
-import { useState, useEffect, useMemo } from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2^√3 탐구</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #080808; color: #e0e0e0; font-family: Georgia, serif; }
+    .row-hover:hover { background: #111 !important; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.1} }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
 
-const SQRT3_STR = "1.73205080756887729352744634150587236694280525381038062805580697945193301690";
-const FINAL_VAL = Math.pow(2, Math.sqrt(3));
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+    const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } = Recharts;
 
-const VALID_PREFIXES = (() => {
-  const list = [];
-  for (let len = 3; len <= 58; len++) {
-    const s = SQRT3_STR.slice(0, len);
-    if (!s.endsWith(".")) list.push(s);
-  }
-  return list;
-})();
+    const SQRT3_STR = "1.73205080756887729352744634150587236694280525381038062805580697945193301690";
+    const FINAL_VAL = Math.pow(2, Math.sqrt(3));
 
-function CustomTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  return (
-    <div style={{ background: "#0a0a0a", border: "1px solid #333", padding: "12px 16px", fontFamily: "monospace", fontSize: 13, color: "#e0e0e0" }}>
-      <div style={{ color: "#888", marginBottom: 4 }}>지수 = {d.label}</div>
-      <div style={{ color: "#f97316", fontWeight: "bold" }}>2^x = {d.y.toFixed(8)}</div>
-      <div style={{ color: "#ef4444", marginTop: 4 }}>목표까지 {Math.abs(d.y - FINAL_VAL).toExponential(2)} 차이</div>
-    </div>
-  );
-}
+    const VALID_PREFIXES = (() => {
+      const list = [];
+      for (let len = 3; len <= 58; len++) {
+        const s = SQRT3_STR.slice(0, len);
+        if (!s.endsWith(".")) list.push(s);
+      }
+      return list;
+    })();
 
-export default function App() {
-  const [idx, setIdx] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const MAX = VALID_PREFIXES.length - 1;
-
-  useEffect(() => {
-    if (!playing) return;
-    if (idx >= MAX) { setPlaying(false); return; }
-    const id = setInterval(() => setIdx(p => p >= MAX ? (setPlaying(false), p) : p + 1), 400);
-    return () => clearInterval(id);
-  }, [playing, idx]);
-
-  const data = useMemo(() =>
-    VALID_PREFIXES.slice(0, idx + 1).map((s, i) => ({
-      step: i + 1, label: s,
-      x: parseFloat(s),
-      y: Math.pow(2, parseFloat(s)),
-    })), [idx]);
-
-  const cur = data[data.length - 1];
-  const prefix = VALID_PREFIXES[idx];
-  const done = idx >= MAX;
-
-  const [intPart, fracPart] = prefix.split(".");
-  const hiddenFrac = SQRT3_STR.slice(prefix.length, 52);
-  const gap = Math.abs((cur?.y ?? 2) - FINAL_VAL);
-
-  return (
-    <div style={{ minHeight: "100vh", background: "#080808", color: "#e0e0e0", fontFamily: "Georgia, serif", padding: "32px 28px" }}>
-      <style>{`
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.1} }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        .row-hover:hover { background: #111 !important; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
-      `}</style>
-
-      {/* ── 헤더 ── */}
-      <div style={{ maxWidth: 1020, margin: "0 auto 32px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
-          <div>
-            <div style={{ fontSize: 12, letterSpacing: 4, color: "#444", marginBottom: 10, fontFamily: "monospace" }}>지수 탐구</div>
-            <h1 style={{ margin: 0, fontSize: 42, fontStyle: "italic", fontWeight: 700, lineHeight: 1.1 }}>
-              2<sup style={{ fontSize: 28, color: "#f97316" }}>√3</sup> 은 어떻게 구할까?
-            </h1>
-            <p style={{ margin: "12px 0 0", fontSize: 16, color: "#666", lineHeight: 1.7, maxWidth: 520 }}>
-              √3은 소수점이 끝나지 않는 수다. 그래서 2<sup>√3</sup>은 <em>딱 떨어지게</em> 계산할 수 없고,<br/>
-              자릿수를 하나씩 늘려가며 <strong style={{ color: "#f97316" }}>점점 가까이 다가갈 뿐</strong>이다.
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-            <button onClick={() => setPlaying(p => !p)} style={{
-              padding: "14px 28px", border: "2px solid #f97316",
-              fontSize: 14, fontFamily: "monospace", letterSpacing: 2,
-              cursor: "pointer", fontWeight: "bold",
-              background: playing ? "#f97316" : "transparent",
-              color: playing ? "#000" : "#f97316",
-              transition: "all 0.2s"
-            }}>
-              {playing ? "⏸ 멈추기" : "▶ 시작"}
-            </button>
-            <button onClick={() => { setIdx(0); setPlaying(false); }} style={{
-              padding: "14px 18px", border: "2px solid #2a2a2a",
-              fontSize: 18, cursor: "pointer", background: "transparent", color: "#666"
-            }} title="처음으로">↺</button>
-          </div>
+    function CustomTooltip({ active, payload }) {
+      if (!active || !payload?.length) return null;
+      const d = payload[0].payload;
+      return (
+        <div style={{ background: "#0a0a0a", border: "1px solid #333", padding: "12px 16px", fontFamily: "monospace", fontSize: 13, color: "#e0e0e0" }}>
+          <div style={{ color: "#888", marginBottom: 4 }}>지수 = {d.label}</div>
+          <div style={{ color: "#f97316", fontWeight: "bold" }}>2^x = {d.y.toFixed(8)}</div>
+          <div style={{ color: "#ef4444", marginTop: 4 }}>목표까지 {Math.abs(d.y - FINAL_VAL).toExponential(2)} 차이</div>
         </div>
-      </div>
+      );
+    }
 
-      {/* ── 메인 그리드 ── */}
-      <div style={{ maxWidth: 1020, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1.35fr", gap: 20 }}>
+    function App() {
+      const [idx, setIdx] = useState(0);
+      const [playing, setPlaying] = useState(false);
+      const MAX = VALID_PREFIXES.length - 1;
 
-        {/* 왼쪽 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      useEffect(() => {
+        if (!playing) return;
+        if (idx >= MAX) { setPlaying(false); return; }
+        const id = setInterval(() => setIdx(p => p >= MAX ? (setPlaying(false), p) : p + 1), 400);
+        return () => clearInterval(id);
+      }, [playing, idx]);
 
-          {/* 지수 숫자 카드 */}
-          <div style={{ border: "1px solid #1e1e1e", padding: "24px 26px", background: "#0a0a0a" }}>
-            <div style={{ fontSize: 13, color: "#555", letterSpacing: 2, marginBottom: 14, fontFamily: "monospace" }}>
-              지수 √3 의 현재 근삿값
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", fontFamily: "monospace" }}>
-              <span style={{ fontSize: 56, fontWeight: 900, color: "#f0f0f0", letterSpacing: -2 }}>{intPart}</span>
-              <span style={{ fontSize: 56, fontWeight: 900, color: "#555" }}>.</span>
-              {(fracPart ?? "").split("").map((d, i) => (
-                <span key={i} style={{
-                  fontSize: Math.max(56 - i * 3, 22),
-                  fontWeight: 900,
-                  color: `hsl(${28 - i * 2}, 90%, ${68 - i * 1.2}%)`,
-                  transition: "all 0.3s",
-                  letterSpacing: -1,
-                }}>{d}</span>
-              ))}
-              <span style={{ fontSize: 22, color: "#1e1e1e" }}>{hiddenFrac}</span>
-              <span style={{ fontSize: 22, color: "#333", animation: "blink 1.2s infinite" }}>…</span>
-            </div>
+      const data = useMemo(() =>
+        VALID_PREFIXES.slice(0, idx + 1).map((s, i) => ({
+          step: i + 1, label: s,
+          x: parseFloat(s),
+          y: Math.pow(2, parseFloat(s)),
+        })), [idx]);
 
-            {/* 진행 바 */}
-            <div style={{ marginTop: 16, height: 3, background: "#141414", borderRadius: 2 }}>
-              <div style={{
-                height: "100%",
-                width: `${(prefix.length / 55) * 100}%`,
-                background: "linear-gradient(90deg, #f97316, #ef4444)",
-                transition: "width 0.4s ease",
-                borderRadius: 2
-              }} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#444", marginTop: 6, fontFamily: "monospace" }}>
-              <span>1.7</span>
-              <span style={{ color: "#f97316" }}>→ √3 (영원히 못 닿는 값)</span>
+      const cur = data[data.length - 1];
+      const prefix = VALID_PREFIXES[idx];
+      const done = idx >= MAX;
+      const [intPart, fracPart] = prefix.split(".");
+      const hiddenFrac = SQRT3_STR.slice(prefix.length, 52);
+      const gap = Math.abs((cur?.y ?? 2) - FINAL_VAL);
+
+      return (
+        <div style={{ minHeight: "100vh", padding: "32px 28px" }}>
+
+          {/* 헤더 */}
+          <div style={{ maxWidth: 1020, margin: "0 auto 32px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
+              <div>
+                <div style={{ fontSize: 12, letterSpacing: 4, color: "#444", marginBottom: 10, fontFamily: "monospace" }}>지수 탐구</div>
+                <h1 style={{ fontSize: 42, fontStyle: "italic", fontWeight: 700, lineHeight: 1.1 }}>
+                  2<sup style={{ fontSize: 28, color: "#f97316" }}>√3</sup> 은 어떻게 구할까?
+                </h1>
+                <p style={{ margin: "12px 0 0", fontSize: 16, color: "#666", lineHeight: 1.7, maxWidth: 520 }}>
+                  √3은 소수점이 끝나지 않는 수다. 그래서 2<sup>√3</sup>은 <em>딱 떨어지게</em> 계산할 수 없고,<br/>
+                  자릿수를 하나씩 늘려가며 <strong style={{ color: "#f97316" }}>점점 가까이 다가갈 뿐</strong>이다.
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+                <button onClick={() => setPlaying(p => !p)} style={{
+                  padding: "14px 28px", border: "2px solid #f97316", fontSize: 14,
+                  fontFamily: "monospace", letterSpacing: 2, cursor: "pointer", fontWeight: "bold",
+                  background: playing ? "#f97316" : "transparent",
+                  color: playing ? "#000" : "#f97316", transition: "all 0.2s"
+                }}>
+                  {playing ? "⏸ 멈추기" : "▶ 시작"}
+                </button>
+                <button onClick={() => { setIdx(0); setPlaying(false); }} style={{
+                  padding: "14px 18px", border: "2px solid #2a2a2a",
+                  fontSize: 18, cursor: "pointer", background: "transparent", color: "#666"
+                }}>↺</button>
+              </div>
             </div>
           </div>
 
-          {/* 현재 계산 카드 */}
-          <div style={{ border: "1px solid #1e1e1e", padding: "24px 26px", background: "#0a0a0a" }}>
-            <div style={{ fontSize: 13, color: "#555", letterSpacing: 2, marginBottom: 16, fontFamily: "monospace" }}>
-              현재 계산 결과
-            </div>
+          {/* 메인 그리드 */}
+          <div style={{ maxWidth: 1020, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1.35fr", gap: 20 }}>
 
-            {/* 수식 */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
-              <span style={{ fontSize: 36, fontWeight: 700, color: "#f0f0f0", fontFamily: "monospace" }}>2</span>
-              <sup style={{
-                fontSize: 15, color: "#f97316", fontFamily: "monospace",
-                background: "#1a0e00", padding: "3px 8px", borderRadius: 3,
-                border: "1px solid #f9731650",
-                maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                display: "inline-block", verticalAlign: "super"
-              }}>{prefix}…</sup>
-              <span style={{ fontSize: 28, color: "#444" }}>=</span>
-              <span style={{ fontSize: 36, fontWeight: 700, color: "#f97316", fontFamily: "monospace", transition: "color 0.3s" }}>
-                {(cur?.y ?? 2).toFixed(6)}
-              </span>
-            </div>
+            {/* 왼쪽 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-            {/* 목표값 */}
-            <div style={{ borderTop: "1px solid #181818", paddingTop: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <span style={{ fontSize: 14, color: "#666" }}>진짜 2<sup>√3</sup> 값</span>
-                <span style={{ fontSize: 18, fontWeight: 700, color: "#ef4444", fontFamily: "monospace" }}>{FINAL_VAL.toFixed(6)}</span>
-              </div>
-
-              {/* 오차 바 */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 13, color: "#555", minWidth: 32 }}>차이</span>
-                <div style={{ flex: 1, height: 8, background: "#111", borderRadius: 4, overflow: "hidden" }}>
+              {/* 지수 카드 */}
+              <div style={{ border: "1px solid #1e1e1e", padding: "24px 26px", background: "#0a0a0a" }}>
+                <div style={{ fontSize: 13, color: "#555", letterSpacing: 2, marginBottom: 14, fontFamily: "monospace" }}>
+                  지수 √3 의 현재 근삿값
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", fontFamily: "monospace" }}>
+                  <span style={{ fontSize: 56, fontWeight: 900, color: "#f0f0f0", letterSpacing: -2 }}>{intPart}</span>
+                  <span style={{ fontSize: 56, fontWeight: 900, color: "#555" }}>.</span>
+                  {(fracPart ?? "").split("").map((d, i) => (
+                    <span key={i} style={{
+                      fontSize: Math.max(56 - i * 3, 22), fontWeight: 900,
+                      color: `hsl(${28 - i * 2}, 90%, ${68 - i * 1.2}%)`,
+                      transition: "all 0.3s", letterSpacing: -1,
+                    }}>{d}</span>
+                  ))}
+                  <span style={{ fontSize: 22, color: "#1e1e1e" }}>{hiddenFrac}</span>
+                  <span style={{ fontSize: 22, color: "#333", animation: "blink 1.2s infinite" }}>…</span>
+                </div>
+                <div style={{ marginTop: 16, height: 3, background: "#141414", borderRadius: 2 }}>
                   <div style={{
-                    height: "100%",
-                    width: `${Math.min(gap * 1800, 100)}%`,
-                    background: "linear-gradient(90deg, #ef4444, #f97316)",
-                    transition: "width 0.4s ease",
-                    borderRadius: 4
+                    height: "100%", width: `${(prefix.length / 55) * 100}%`,
+                    background: "linear-gradient(90deg, #f97316, #ef4444)",
+                    transition: "width 0.4s ease", borderRadius: 2
                   }} />
                 </div>
-                <span style={{ fontSize: 13, color: "#ef4444", fontFamily: "monospace", minWidth: 88 }}>
-                  {gap.toExponential(2)}
-                </span>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#444", marginTop: 6, fontFamily: "monospace" }}>
+                  <span>1.7</span>
+                  <span style={{ color: "#f97316" }}>→ √3 (영원히 못 닿는 값)</span>
+                </div>
+              </div>
+
+              {/* 계산 카드 */}
+              <div style={{ border: "1px solid #1e1e1e", padding: "24px 26px", background: "#0a0a0a" }}>
+                <div style={{ fontSize: 13, color: "#555", letterSpacing: 2, marginBottom: 16, fontFamily: "monospace" }}>
+                  현재 계산 결과
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
+                  <span style={{ fontSize: 36, fontWeight: 700, color: "#f0f0f0", fontFamily: "monospace" }}>2</span>
+                  <sup style={{
+                    fontSize: 15, color: "#f97316", fontFamily: "monospace",
+                    background: "#1a0e00", padding: "3px 8px", borderRadius: 3,
+                    border: "1px solid #f9731650", maxWidth: 180,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    display: "inline-block", verticalAlign: "super"
+                  }}>{prefix}…</sup>
+                  <span style={{ fontSize: 28, color: "#444" }}>=</span>
+                  <span style={{ fontSize: 36, fontWeight: 700, color: "#f97316", fontFamily: "monospace" }}>
+                    {(cur?.y ?? 2).toFixed(6)}
+                  </span>
+                </div>
+                <div style={{ borderTop: "1px solid #181818", paddingTop: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <span style={{ fontSize: 14, color: "#666" }}>진짜 2<sup>√3</sup> 값</span>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: "#ef4444", fontFamily: "monospace" }}>{FINAL_VAL.toFixed(6)}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 13, color: "#555", minWidth: 32 }}>차이</span>
+                    <div style={{ flex: 1, height: 8, background: "#111", borderRadius: 4, overflow: "hidden" }}>
+                      <div style={{
+                        height: "100%", width: `${Math.min(gap * 1800, 100)}%`,
+                        background: "linear-gradient(90deg, #ef4444, #f97316)",
+                        transition: "width 0.4s ease", borderRadius: 4
+                      }} />
+                    </div>
+                    <span style={{ fontSize: 13, color: "#ef4444", fontFamily: "monospace", minWidth: 88 }}>
+                      {gap.toExponential(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {done && (
+                <div style={{ border: "1px solid #f97316", padding: "20px 24px", background: "#0d0800", animation: "fadeIn 0.6s ease" }}>
+                  <p style={{ fontSize: 16, lineHeight: 1.8, color: "#ccc" }}>
+                    자릿수를 아무리 늘려도<br/>
+                    <strong style={{ color: "#f97316" }}>√3 그 자체</strong>에는 영원히 닿을 수 없다.<br/>
+                    그래서 2<sup>√3</sup>은 이렇게 <strong style={{ color: "#ef4444" }}>가까이 다가가는 과정</strong>으로만 정의된다.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* 오른쪽 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+              {/* 그래프 */}
+              <div style={{ border: "1px solid #1e1e1e", padding: "20px 16px 12px", background: "#0a0a0a" }}>
+                <div style={{ fontSize: 13, color: "#555", letterSpacing: 1, fontFamily: "monospace", marginBottom: 12 }}>
+                  자릿수가 늘어날수록 값이 빨간 선에 가까워진다
+                </div>
+                <div style={{ height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={data} margin={{ top: 8, right: 24, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="2 4" stroke="#111" vertical={false} />
+                      <XAxis dataKey="step" hide />
+                      <YAxis
+                        domain={[FINAL_VAL - 0.52, FINAL_VAL + 0.06]}
+                        fontSize={12}
+                        tickFormatter={v => v.toFixed(3)}
+                        tick={{ fill: "#444", fontFamily: "monospace" }}
+                        width={58}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <ReferenceLine
+                        y={FINAL_VAL} stroke="#ef4444" strokeDasharray="5 3" strokeWidth={2}
+                        label={{ value: `2^√3 = ${FINAL_VAL.toFixed(4)}…`, position: "insideTopRight", fontSize: 12, fill: "#ef4444", fontFamily: "monospace" }}
+                      />
+                      <Line
+                        type="monotone" dataKey="y" stroke="#f97316" strokeWidth={2.5}
+                        dot={data.length < 14 ? { r: 4, fill: "#f97316", strokeWidth: 0 } : false}
+                        isAnimationActive={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                <div style={{ textAlign: "center", fontSize: 12, color: "#333", fontFamily: "monospace", marginTop: 6 }}>
+                  주황선: 2^(1.7) → 2^(1.73) → 2^(1.732) → …　　빨간 점선: 진짜 2^√3
+                </div>
+              </div>
+
+              {/* 테이블 */}
+              <div style={{ border: "1px solid #1e1e1e", background: "#0a0a0a", overflow: "hidden" }}>
+                <div style={{ padding: "14px 18px", borderBottom: "1px solid #1a1a1a", fontSize: 13, color: "#555", fontFamily: "monospace" }}>
+                  단계별 계산 기록
+                </div>
+                <div style={{ maxHeight: 230, overflowY: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, fontFamily: "monospace" }}>
+                    <thead style={{ position: "sticky", top: 0, background: "#0d0d0d" }}>
+                      <tr>
+                        {["단계", "지수", "2^x 값", "목표까지 차이"].map(h => (
+                          <th key={h} style={{ padding: "10px 12px", textAlign: "left", borderBottom: "1px solid #1a1a1a", color: "#555", fontWeight: "normal" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.slice().reverse().map(item => (
+                        <tr key={item.step} className="row-hover" style={{ borderBottom: "1px solid #0f0f0f", transition: "background 0.15s" }}>
+                          <td style={{ padding: "8px 12px", color: "#444" }}>{item.step}</td>
+                          <td style={{ padding: "8px 12px", color: "#f97316" }}>{item.label}</td>
+                          <td style={{ padding: "8px 12px", color: "#e0e0e0", fontWeight: "bold" }}>{item.y.toFixed(7)}</td>
+                          <td style={{ padding: "8px 12px", color: "#ef4444" }}>{Math.abs(item.y - FINAL_VAL).toExponential(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 완료 메시지 */}
-          {done && (
-            <div style={{
-              border: "1px solid #f97316", padding: "20px 24px",
-              background: "#0d0800", animation: "fadeIn 0.6s ease"
-            }}>
-              <p style={{ margin: 0, fontSize: 16, lineHeight: 1.8, color: "#ccc" }}>
-                자릿수를 아무리 늘려도<br/>
-                <strong style={{ color: "#f97316" }}>√3 그 자체</strong>에는 영원히 닿을 수 없다.<br/>
-                그래서 2<sup>√3</sup>은 이렇게 <strong style={{ color: "#ef4444" }}>가까이 다가가는 과정</strong>으로만 정의된다.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* 오른쪽 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-          {/* 그래프 */}
-          <div style={{ border: "1px solid #1e1e1e", padding: "20px 16px 12px", background: "#0a0a0a" }}>
-            <div style={{ fontSize: 13, color: "#555", letterSpacing: 1, fontFamily: "monospace", marginBottom: 12 }}>
-              자릿수가 늘어날수록 값이 빨간 선에 가까워진다
-            </div>
-            <div style={{ height: 300 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data} margin={{ top: 8, right: 24, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="2 4" stroke="#111" vertical={false} />
-                  <XAxis dataKey="step" hide />
-                  <YAxis
-                    domain={[FINAL_VAL - 0.52, FINAL_VAL + 0.06]}
-                    fontSize={12}
-                    tickFormatter={v => v.toFixed(3)}
-                    tick={{ fill: "#444", fontFamily: "monospace" }}
-                    width={58}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <ReferenceLine
-                    y={FINAL_VAL}
-                    stroke="#ef4444"
-                    strokeDasharray="5 3"
-                    strokeWidth={2}
-                    label={{ value: `2^√3 = ${FINAL_VAL.toFixed(4)}…`, position: "insideTopRight", fontSize: 12, fill: "#ef4444", fontFamily: "monospace" }}
-                  />
-                  <Line
-                    type="monotone" dataKey="y"
-                    stroke="#f97316" strokeWidth={2.5}
-                    dot={data.length < 14 ? { r: 4, fill: "#f97316", strokeWidth: 0 } : false}
-                    isAnimationActive={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            <div style={{ textAlign: "center", fontSize: 12, color: "#333", fontFamily: "monospace", marginTop: 6 }}>
-              주황선: 2^(1.7) → 2^(1.73) → 2^(1.732) → …　　빨간 점선: 진짜 2^√3
-            </div>
-          </div>
-
-          {/* 테이블 */}
-          <div style={{ border: "1px solid #1e1e1e", background: "#0a0a0a", overflow: "hidden" }}>
-            <div style={{ padding: "14px 18px", borderBottom: "1px solid #1a1a1a", fontSize: 13, color: "#555", fontFamily: "monospace" }}>
-              단계별 계산 기록
-            </div>
-            <div style={{ maxHeight: 230, overflowY: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, fontFamily: "monospace" }}>
-                <thead style={{ position: "sticky", top: 0, background: "#0d0d0d" }}>
-                  <tr>
-                    {["단계", "지수", "2^x 값", "목표까지 차이"].map(h => (
-                      <th key={h} style={{ padding: "10px 12px", textAlign: "left", borderBottom: "1px solid #1a1a1a", color: "#555", fontWeight: "normal" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.slice().reverse().map(item => (
-                    <tr key={item.step} className="row-hover" style={{ borderBottom: "1px solid #0f0f0f", transition: "background 0.15s" }}>
-                      <td style={{ padding: "8px 12px", color: "#444" }}>{item.step}</td>
-                      <td style={{ padding: "8px 12px", color: "#f97316" }}>{item.label}</td>
-                      <td style={{ padding: "8px 12px", color: "#e0e0e0", fontWeight: "bold" }}>{item.y.toFixed(7)}</td>
-                      <td style={{ padding: "8px 12px", color: "#ef4444" }}>{Math.abs(item.y - FINAL_VAL).toExponential(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* 하단 설명 */}
+          <div style={{ maxWidth: 1020, margin: "32px auto 0", padding: "28px 0", borderTop: "1px solid #1a1a1a" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 28 }}>
+              {[
+                { num: "①", title: "정수 지수는 쉽다", body: "2³ = 2×2×2 = 8. 지수가 자연수면 그냥 곱하면 된다.", color: "#22c55e" },
+                { num: "②", title: "√3는 끝이 없다", body: "√3 = 1.73205… 소수점 아래 숫자가 끝없이 이어진다. 그래서 2^√3 을 딱 떨어지게 구할 수 없다.", color: "#f97316" },
+                { num: "③", title: "가까이 다가가는 것이 답이다", body: "2^1.7, 2^1.73, 2^1.732… 자릿수를 늘릴수록 진짜 값에 가까워진다. 이 과정 자체가 2^√3 의 정의다.", color: "#ef4444" }
+              ].map(({ num, title, body, color }) => (
+                <div key={num} style={{ padding: "4px 0" }}>
+                  <div style={{ fontSize: 28, fontFamily: "monospace", color, marginBottom: 10 }}>{num}</div>
+                  <div style={{ fontSize: 15, fontWeight: "bold", color: "#ccc", marginBottom: 10 }}>{title}</div>
+                  <div style={{ fontSize: 14, color: "#555", lineHeight: 1.8 }}>{body}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      </div>
+      );
+    }
 
-      {/* ── 하단 설명 ── */}
-      <div style={{ maxWidth: 1020, margin: "32px auto 0", padding: "28px 0", borderTop: "1px solid #1a1a1a" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 28 }}>
-          {[
-            {
-              num: "①",
-              title: "정수 지수는 쉽다",
-              body: "2³ = 2×2×2 = 8. 지수가 자연수면 그냥 곱하면 된다.",
-              color: "#22c55e"
-            },
-            {
-              num: "②",
-              title: "√3는 끝이 없다",
-              body: "√3 = 1.73205… 소수점 아래 숫자가 끝없이 이어진다. 그래서 2^√3 을 딱 떨어지게 구할 수 없다.",
-              color: "#f97316"
-            },
-            {
-              num: "③",
-              title: "가까이 다가가는 것이 답이다",
-              body: "2^1.7, 2^1.73, 2^1.732… 자릿수를 늘릴수록 진짜 값에 가까워진다. 이 과정 자체가 2^√3 의 정의다.",
-              color: "#ef4444"
-            }
-          ].map(({ num, title, body, color }) => (
-            <div key={num} style={{ padding: "4px 0" }}>
-              <div style={{ fontSize: 28, fontFamily: "monospace", color, marginBottom: 10 }}>{num}</div>
-              <div style={{ fontSize: 15, fontWeight: "bold", color: "#ccc", marginBottom: 10 }}>{title}</div>
-              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.8 }}>{body}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
